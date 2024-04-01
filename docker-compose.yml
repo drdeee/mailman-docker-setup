@@ -1,0 +1,57 @@
+services:
+  mailman_core:
+    image: 'ghcr.io/maxking/mailman-core:0.4.5'
+    volumes:
+      - 'core_data:/opt/mailman/core'
+    environment:
+      SMTP_HOST: tur03.hostsharing.net
+      SMTP_PORT: 4587
+      SMTP_HOST_USER: tur03-list
+      SMTP_HOST_PASSWORD: LZvryTnvK2EureTAUU3L95ofoKh6XB
+      DATABASE_URL: >-
+        mysql+pymysql://mailman:mailman@mailman_db:3306/mailman?charset=utf8mb4&use_unicode=1
+      DATABASE_TYPE: mysql
+      DATABASE_CLASS: mailman.database.mysql.MySQLDatabase
+    networks:
+      - intern
+  mailman_web:
+    image: 'ghcr.io/maxking/mailman-web:0.4.5'
+    volumes:
+      - 'web_data:/opt/mailman/web'
+    environment:
+      SERVE_FROM_DOMAIN: wsdb-lists.eliasbistry.de
+      SECRET_KEY: fEGhdi4NGZukKdX9GQLHg3JD87tDdwkSzKkf8fmhvQ8fxc2AlMbqIOPivuZihF
+      SMTP_HOST: tur03.hostsharing.net
+      SMTP_PORT: 4587
+      SMTP_HOST_USER: tur03-list
+      SMTP_HOST_PASSWORD: LZvryTnvK2EureTAUU3L95ofoKh6XB
+      SMTP_USE_SSL: true
+    networks:
+      - intern
+  mailman_db:
+    image: 'mysql:5.7'
+    volumes:
+      - 'db_data:/var/lib/mysql'
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: mailman
+      MYSQL_DATABASE: mailman
+      MYSQL_USER: mailman
+      MYSQL_PASSWORD: mailman
+    networks:
+      - intern
+  mailman_proxy:
+    build: ./proxy
+    networks:
+      - intern
+      - extern
+    
+volumes:
+  core_data:
+  web_data:
+  db_data:
+networks:
+  extern:
+    external: true
+    name: general
+  intern:
