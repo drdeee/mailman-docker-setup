@@ -12,9 +12,9 @@ services:
     depends_on:
     - mailman-db
     environment:
-    - DATABASE_URL=postgresql://mailman:mailmanpass@mailman-db/mailmandb
-    - DATABASE_TYPE=postgres
-    - DATABASE_CLASS=mailman.database.postgresql.PostgreSQLDatabase
+      DATABASE_URL: postgresql://mailman:mailmanpass@mailman-db/mailmandb
+      DATABASE_TYPE: postgres
+      DATABASE_CLASS: mailman.database.postgresql.PostgreSQLDatabase
     networks:
       - mailman
 
@@ -54,7 +54,7 @@ services:
       - mailman
       - portainer
     volumes:
-      mailman_web:/web:ro
+      - mailman_web:/web:ro
 
 volumes:
   mailman_core:
