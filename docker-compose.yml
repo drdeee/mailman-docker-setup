@@ -1,57 +1,68 @@
 services:
-  mailman_core:
-    image: 'ghcr.io/maxking/mailman-core:0.4.5'
+  mailman-core:
+    image: maxking/mailman-core:0.4.5
+    container_name: mailman-core
+    hostname: mailman-core
+    restart: unless-stopped
     volumes:
-      - 'core_data:/opt/mailman/core'
+    - mailman_core:/opt/mailman/
+    stop_grace_period: 30s
+    links:
+    - mailman-db
+    depends_on:
+    - mailman-db
     environment:
-      SMTP_HOST: tur03.hostsharing.net
-      SMTP_PORT: 4587
-      SMTP_HOST_USER: tur03-list
-      SMTP_HOST_PASSWORD: LZvryTnvK2EureTAUU3L95ofoKh6XB
-      DATABASE_URL: >-
-        mysql+pymysql://mailman:mailman@mailman_db:3306/mailman?charset=utf8mb4&use_unicode=1
-      DATABASE_TYPE: mysql
-      DATABASE_CLASS: mailman.database.mysql.MySQLDatabase
+    - DATABASE_URL=postgresql://mailman:mailmanpass@mailman-db/mailmandb
+    - DATABASE_TYPE=postgres
+    - DATABASE_CLASS=mailman.database.postgresql.PostgreSQLDatabase
     networks:
-      - intern
-  mailman_web:
-    image: 'ghcr.io/maxking/mailman-web:0.4.5'
+      - mailman
+
+  mailman-web:
+    image: maxking/mailman-web:0.4.5
+    container_name: mailman-web
+    hostname: mailman-web
+    restart: unless-stopped
+    depends_on:
+    - mailman-db
+    links:
+    - mailman-core
+    - mailman-db
     volumes:
-      - 'web_data:/opt/mailman/web'
+    - mailman_web:/opt/mailman-web-data
     environment:
+      DATABASE_TYPE: postgres
+      DATABASE_URL: postgresql://mailman:mailmanpass@mailman-db/mailmandb
+      SECRET_KEY: mcmgg1CB0V2sPCIcTQzchTMIrXgbX7IVEUJ5TuhWdj2YwL8VW1Z
       SERVE_FROM_DOMAIN: wsdb-lists.eliasbistry.de
-      SECRET_KEY: fEGhdi4NGZukKdX9GQLHg3JD87tDdwkSzKkf8fmhvQ8fxc2AlMbqIOPivuZihF
-      SMTP_HOST: tur03.hostsharing.net
-      SMTP_PORT: 4587
-      SMTP_HOST_USER: tur03-list
-      SMTP_HOST_PASSWORD: LZvryTnvK2EureTAUU3L95ofoKh6XB
-      SMTP_USE_SSL: true
     networks:
-      - intern
-  mailman_db:
-    image: 'mysql:5.7'
-    volumes:
-      - 'db_data:/var/lib/mysql'
-    restart: always
+      - mailman
+
+  mailman-db:
     environment:
-      MYSQL_ROOT_PASSWORD: mailman
-      MYSQL_DATABASE: mailman
-      MYSQL_USER: mailman
-      MYSQL_PASSWORD: mailman
+    - POSTGRES_DB=mailmandb
+    - POSTGRES_USER=mailman
+    - POSTGRES_PASSWORD=mailmanpass
+    image: postgres:12-alpine
+    volumes:
+    - mailman_db:/var/lib/postgresql/data
     networks:
-      - intern
-  mailman_proxy:
+      - mailman
+  mailman-proxy:
     build: ./proxy
     networks:
-      - intern
-      - extern
-    
+      - mailman
+      - portainer
+    volumes:
+      mailman_web:/web:ro
+
 volumes:
-  core_data:
-  web_data:
-  db_data:
+  mailman_core:
+  mailman_web:
+  mailman_db:
+  
 networks:
-  extern:
+  mailman:
+  portainer:
     external: true
     name: general
-  intern:
