@@ -50,11 +50,15 @@ services:
       - mailman
   mailman-proxy:
     build: ./proxy
+    links:
+      - mailman-web
+    depends_on:
+      - mailman-web
+    volumes:
+      - mailman_web:/web:ro
     networks:
       - mailman
       - portainer
-    volumes:
-      - mailman_web:/web:ro
 
 volumes:
   mailman_core:
